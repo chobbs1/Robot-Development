@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Robot-Modelling-Simulation", "Robot-Modelling-Simulation\Robot-Modelling-Simulation.vcxproj", "{FBF8AA9E-009D-4A3C-88F5-207110824D1A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Debug|x64.ActiveCfg = Debug|x64
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Debug|x64.Build.0 = Debug|x64
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Debug|x86.ActiveCfg = Debug|Win32
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Debug|x86.Build.0 = Debug|Win32
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Release|x64.ActiveCfg = Release|x64
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Release|x64.Build.0 = Release|x64
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Release|x86.ActiveCfg = Release|Win32
+		{FBF8AA9E-009D-4A3C-88F5-207110824D1A}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {27A630E0-175D-4192-83D8-C3D1BA4348E6}
+	EndGlobalSection
+EndGlobal
