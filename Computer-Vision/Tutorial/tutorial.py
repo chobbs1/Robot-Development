@@ -61,8 +61,8 @@ def main():
     parser.add_argument("-t", "--undertest", type=str, default="Megamind_bugy.avi",
                         help="Path to the video to be tested")
     args = parser.parse_args()
-    sourceReference = args.ref
-    sourceCompareWith = args.undertest
+    sourceReference = "video/Megamind.avi"
+    sourceCompareWith = "video/Megamind_bugy.avi"
     delay = args.delay
     psnrTriggerValue = args.psnrtriggervalue
     framenum = -1 # Frame counter
