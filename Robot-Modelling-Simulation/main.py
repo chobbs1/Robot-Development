@@ -19,7 +19,9 @@ print("---Begin Simulation---")
 initial_conditions = [x,x_dot,y,y_dot,theta]
 mRobot = Robot(initial_conditions)
 
+
 mRobot.printStatus()
+
 
 # for i in range(time_length):
 #     physics_model.updateState(x,x_dot,y,y_dot,theta)
