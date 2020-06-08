@@ -1,9 +1,12 @@
 import math
+import numpy as np
 from RobotModel import Robot
-import Visualisation
+from Visualisation import VisualisationTools
+from matplotlib import pyplot as plt
+import matplotlib.animation as animation
 
 # define simulation environment conditions
-duration = 100
+duration = 10
 time = 0
 dt = 0.01
 
@@ -18,13 +21,21 @@ theta = 0
 print("---Begin Simulation---")
 initial_conditions = [x,x_dot,y,y_dot,theta]
 mRobot = Robot(initial_conditions)
+mPlotter = VisualisationTools()
 
 
-mRobot.printStatus()
+# for i in range(int(duration/dt)):
+#     time += dt
+t = np.arange(0,duration,dt)
+y = np.sin(2*np.pi*t)*np.exp(-t)
+x = 5*np.ones(len(y))
 
 
-# for i in range(time_length):
-#     physics_model.updateState(x,x_dot,y,y_dot,theta)
-#     plot_robot.updatePlot(x,y,theta)
+###------------visualise output-------------###
+# mPlotter.animateRobot(x,y,t)
+# mPlotter.plot_vs_time(t,y,title="Y vs. Time",ylabel="Acc (m/s)")
+
+
+
 
 print("---Simulation Complete---")
