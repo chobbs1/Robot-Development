@@ -7,6 +7,7 @@ import matplotlib.animation as animation
 from datetime import date,time
 import time as timeModule
 import csv
+import os
 
 def getlogTitle():
     today = date.today()
@@ -33,8 +34,19 @@ print("---Begin Simulation---")
 initial_conditions = [x,x_dot,y,y_dot,theta]
 mRobot = Robot(initial_conditions)
 mPlotter = VisualisationTools()
-file = open("Logs/"+getlogTitle()+".csv", 'w')
-dataLogger = csv.writer(file)
+
+def beginDataLogging():
+    try:
+        file = open("Logs/"+getlogTitle()+".csv", 'w',newline='')
+    except FileNotFoundError:
+        os.mkdir("Logs")
+        file = open("Logs/"+getlogTitle()+".csv", 'w',newline='')
+    dataLogger = csv.writer(file,delimiter=',')
+    dataLogger.writerow(["x","x_dot","y","y_dot","theta"])
+    return dataLogger,file
+
+
+dataLogger,file = beginDataLogging()
 
 
 
@@ -42,13 +54,14 @@ for i in range(int(duration/dt)):
     time += dt
     x = i
 
-    state_vector = [x,x_dot,y,y_dot,theta]
 
-    dataLogger.writerow(state_vector)
+    
+    dataLogger.writerow([x,x_dot,y,y_dot,theta])
+
 
 
 ###---------------Log Output----------------###
-dataLogger.writerow("x,x_dot,y,y_dot,theta")
+
 
 ###------------visualise output-------------###
 # mPlotter.animateRobot(x,y,t)
