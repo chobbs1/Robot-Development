@@ -5,6 +5,7 @@ import math
 class Robot():
     mass = 1
     I_G = 1
+    g = 9.81
     battery = 100
     length = 0.5
     height = 0.5
@@ -24,7 +25,13 @@ class Robot():
         print("y_dot = {}".format(self.y_dot))
         print("theta = {}".format(self.theta))
 
+    def x_dd(Ux,t):
+        return Ux/self.mass
 
+    def y_dd(Uy,t):
+        mass = 1
+        g = 9.81
+        return Uy/mass - g
 
 
     def updateDynamicModel(self,F_r,F_l):
