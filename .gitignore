@@ -1,5 +1,6 @@
 *.avi
 *.jpg
 *.png
+*.sqlite3
 Robot-Modelling-Simulation/Logs
 Robot-Modelling-Simulation/Visualisation
