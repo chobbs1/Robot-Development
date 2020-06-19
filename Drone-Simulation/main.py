@@ -4,201 +4,181 @@ import time
 from drone_model import Drone
 import numpy as np
 from scipy.integrate import odeint
+import sys
 
 # define gui characteristics
-WIDTH = 800
+SCALE_FACTOR = 100
+GUI_WIDTH = 800
+WORLD_WIDTH = GUI_WIDTH/SCALE_FACTOR
 HEIGHT_UI = 200
 HEIGHT_DISPLAY = 500
+WORLD_HEIGHT = HEIGHT_DISPLAY/SCALE_FACTOR
 SPEED_THRESHOLD = 20
+UI_BACKGROUND_COLOUR = "gray"
+
+enVars = [SCALE_FACTOR,HEIGHT_DISPLAY]
+
+# define environment variables
+
 
 # define physical constants
-class Drone:
-    arm_length = 20
-    arm_width = 2
-    m = 1
-    g = 9.81
-    F_r = 0
-    F_l = 0
-    int_error = 0
-
-
-    def __init__(self,ICs):
-        self.Z = ICs
-
-    def printStateVector(self):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
-
-        print("x = {}".format(x))
-        print("x_dot = {}".format(x_dot))
-        print("y = {}".format(y))
-        print("y_dot = {}".format(y_dot))
-        print("theta = {}".format(theta))
-        print("theta_dot = {}".format(theta_dot))
-        print("F_r = {}".format(self.F_r))
-        print("F_l = {}".format(self.F_l))
-
-    def draw_drone(self):
-        x = self.Z[0]
-        y = self.Z[2]
-        theta = self.Z[4]
-        arm_length = self.arm_length
-        arm_width = self.arm_width
-
-        canvas.delete("all")
-        c_theta = math.cos(theta)
-        s_theta = math.sin(theta)
-
-        unrotated_vertices = [
-            [x - arm_length, y - arm_width],
-            [x + arm_length, y - arm_width],
-            [x + arm_length, y + arm_width],
-            [x - arm_length, y + arm_width],
-        ]
-        rotated_vertices = []
-
-        for coords in unrotated_vertices:
-            x0 = coords[0]
-            y0 = coords[1]
-
-            x1 = x0*c_theta - y0*s_theta
-            y1 = x0*s_theta + y0*c_theta
-
-            rotated_vertices.append([x1,y1])
-
-        drone = canvas.create_polygon(rotated_vertices, fill="black")
-
-    def check_crash(self):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
-
-        if y<0:
-            print("Crashed into groud")
-            return True
-        elif x<0 or x>20:
-            print("Off Screen")
-            return True
-        elif x_dot>SPEED_THRESHOLD or y_dot>SPEED_THRESHOLD:
-            print("Unrealistic speeds")
-            return True
-
-        return False
-
-    def solve_dynamics(self,dt):
-
-        t = np.arange(0,dt,dt/10)
-        self.controller()
-
-        Z = odeint(self.dynamics,self.Z,t)
-        self.Z = Z[-1]
-
-    # def dynamics(self,X,t):
-    #     x = X[0]
-    #     x_dot = X[1]
-    #     y = X[2]
-    #     y_dot = X[3]
-    #     theta = X[4]
-    #     theta_dot = X[5]
-    #
-    #     s_theta = math.sin(theta)
-    #     c_theta = math.cos(theta)
-    #
-    #     x_dd = -(self.F_r + self.F_l)*s_theta/self.m
-    #     y_dd = -((self.F_r + self.F_l)*c_theta - self.g)/self.m
-    #     theta_dd = 12*(self.F_r + self.F_l)/(self.m*self.arm_length)
-    #
-    #     Z_dot = [x_dot,x_dd,y_dot,y_dd,theta_dot,theta_dd]
-    #     return Z_dot
-
-    def dynamics(self,Z,t):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
-
-        s_theta = math.sin(theta)
-        c_theta = math.cos(theta)
-
-        x_dd = -(self.F_r + self.F_l)*s_theta/self.m
-        y_dd = -((self.F_r + self.F_l)*c_theta - self.g)/self.m
-        theta_dd = 12*(self.F_r + self.F_l)/(self.m*self.arm_length)
-
-        Z_dot = [x_dot,x_dd,y_dot,y_dd,theta_dot,theta_dd]
-        return Z_dot
-
-    def controller(self):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
-
-        self.F_l = 1
-        self.F_r = 1
 
 
 gui = tk.Tk()
 gui.title("Drone Simulation")
-droneFrame = tk.Frame(gui, bg="white", height=HEIGHT_DISPLAY, width=WIDTH)
-droneFrame.pack(side=TOP)
+gui.geometry("800x700+100+50")
 
-uiFrame = tk.Canvas(gui, bg="gray", height=HEIGHT_UI, width=WIDTH)
-ui_canvas.pack()
+displayCanvas = tk.Canvas(gui, bg="white", height=HEIGHT_DISPLAY, width=GUI_WIDTH)
+displayCanvas.pack(side="top")
+
+uiFrame = tk.Frame(gui, bg="gray", height=HEIGHT_UI, width=GUI_WIDTH)
+uiFrame.pack(side="bottom")
+
+controlFrame = tk.Frame(uiFrame, bg="gray", height=HEIGHT_UI, width=GUI_WIDTH)
+controlFrame.pack(side="left")
+
+gainsFrame = tk.Frame(uiFrame, bg="gray", height=HEIGHT_UI, width=GUI_WIDTH)
+gainsFrame.pack(side="left")
+
+flightDataFrame = tk.Frame(uiFrame, bg="gray", height=HEIGHT_UI, width=GUI_WIDTH)
+flightDataFrame.pack(side="right")
+
+
+#-------------------Buttons for controlling the simulation--------------------
+def startButtonCallback():
+    t = 0
+    dt = 0.02
+    
+    ICs = [4,0,3,0,0,0]
+    mDrone = Drone(ICs,enVars)
+
+    while mDrone.check_crash():
+        mDrone.y_ref = P_gain.get()
+        mDrone.draw_drone(displayCanvas)
+        mDrone.solve_dynamics(dt)
+
+        gui.update()
+        gui.update_idletasks()
+
+        t += dt
+        time.sleep(dt)
+
+
+
+startButton = tk.Button(controlFrame,  bg="white",
+        text="Start", fg="black",command = startButtonCallback)
+startButton.grid(column=0)
+
+def exitButtonCallback():
+    sys.exit()
+
+exitButton = tk.Button(controlFrame,  bg="white",
+        text="Quit", fg="black",command = exitButtonCallback)
+exitButton.grid(column=0)
+
+
+
+logButton = tk.Button(controlFrame,  bg="white", text="Log Data", fg="black")
+logButton.grid(column=0)
+
+#----------------------------Sliders for Gains-----------------------------
+P_gain = tk.Scale(gainsFrame, from_=0, to=10, width=15, length=150,bg=UI_BACKGROUND_COLOUR,
+    tickinterval=0.5,orient="horizontal",label="P Gain")
+P_gain.set(0)
+P_gain.grid(column=2,row=0)
+
+
+I_gain = tk.Scale(gainsFrame, from_=0, to=10, width=15, length=150,bg=UI_BACKGROUND_COLOUR,
+    tickinterval=0.5,orient="horizontal",label="I Gain")
+I_gain.set(0)
+I_gain.grid(column=2,row=1)
+
+
+# D_gain = tk.Scale(gainsFrame, from_=0, to=10, width=15, length=150,
+#     tickinterval=0.5,orient="horizontal",label="D Gain")
+# D_gain.set(0)
+# D_gain.grid(column=2,row=2)
+
+#-------------------------Flight Status Information-----------------------------
+x = 10
+x_dot = 69
+y = 11
+y_dot = 3
+theta = 0
+theta_dot = 100
+t = 20
+
+x_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, text="x = {}m".format(x))
+x_label.grid(column=3,row=0)
+
+x_dot_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, justify="left",
+        text="x_dot = {}m/s".format(x_dot))
+x_dot_label.grid(column=4,row=0)
+
+y_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, text="y = {}m".format(y))
+y_label.grid(column=3,row=1)
+
+y_dot_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, justify="left",
+        text="y_dot = {}m/s".format(y_dot))
+y_dot_label.grid(column=4,row=1)
+
+theta_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, text="theta = {}deg".format(theta))
+theta_label.grid(column=3,row=2)
+
+theta_dot_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, text="theta_dot = {}deg/s".format(theta_dot))
+theta_dot_label.grid(column=4,row=2)
+
+time_label = tk.Label(flightDataFrame,bg=UI_BACKGROUND_COLOUR, justify="left",
+        text="time = {} s".format(t))
+time_label.grid(column=3,row=3)
+
+
+
+def show_values():
+    print(P_gain.get())
 
 def upKey(event):
     print("Up key pressed")
-    mDrone.F_r += 3
-    mDrone.F_l += 3
+gui.bind('<Up>', upKey)
 
 def downKey(event):
     print("Down key pressed")
-    mDrone.F_r -= 3
-    mDrone.F_l -= 3
-
-
-gui.bind('<Up>', upKey)
 gui.bind('<Down>', downKey)
+
+def leftKey(event):
+    print("Left key pressed")
+gui.bind('<Left>', leftKey)
+
+def rightKey(event):
+    print("Right key pressed")
+gui.bind('<Right>', rightKey)
+
+
+
+#-----------------------------------------------
+
+def draw_compass(displayCanvas):
+    x_origin = 10
+    y_origin = HEIGHT_DISPLAY-10
+    length = 50
+
+    x_arrow = displayCanvas.create_line(x_origin, y_origin, x_origin+length, y_origin,
+        arrow=tk.LAST)
+    y_arrow = displayCanvas.create_line(x_origin, y_origin, x_origin, y_origin-length,
+        arrow=tk.LAST)
+
+    x_origin += 80
+    y_origin -= 10
+    displayCanvas.create_text(x_origin,y_origin,text="(Xmax = {}m, Ymax = {}m)".format(WORLD_WIDTH,WORLD_HEIGHT))
+
+draw_compass(displayCanvas)
 
 gui.mainloop()
 
 
 
 #-----------------physics------------------------------------
-# t = 0
-# dt = 0.01
-#
-# ICs = [250,0,100,0,0,0]
-#
-# mDrone = Drone(ICs)
-#
-# i=0
-# while i<22002:
-#     gui.update_idletasks()
-#     gui.update()
-#
-#
-#     mDrone.draw_drone()
-#     mDrone.printStateVector()
-#     mDrone.solve_dynamics(dt)
-#
-#
-#     t += dt
-#
-#     time.sleep(dt)
-#     # time.sleep(2)
-#     if mDrone.check_crash():
-#         break
+
 #-----------------physics------------------------------------
 
 
