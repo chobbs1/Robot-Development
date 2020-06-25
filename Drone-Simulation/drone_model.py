@@ -92,9 +92,10 @@ class Drone:
 
             drone_rotated_translated_vertices.append([x1,y1])
 
+
         try:
             displayCanvas.delete(self.drone)
-        except:
+        except AttributeError:
             pass
 
         self.drone = displayCanvas.create_polygon(drone_rotated_translated_vertices, fill="black")
