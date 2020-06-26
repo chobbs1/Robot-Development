@@ -6,9 +6,10 @@ import time
 mGui = gui()
 enVars = [mGui.SCALE_FACTOR,mGui.DISPLAY_CANVAS_HEIGHT]
 ICs = [4,0,2,0,0,0]
-initial_gains = [1,8,9,3,0.2,0.5]
+initial_gains = [2,8,9,3,0.5,0.9]
 mGui.ICs = ICs
 mGui.initial_gains = initial_gains
+r=5
 mDrone = Drone(ICs,enVars)
 mDrone.draw_drone(mGui.displayCanvas)
 
@@ -48,7 +49,6 @@ while not mGui.EXIT_PRESSED:
     while mGui.START_PRESSED and not mGui.EXIT_PRESSED:
         mDrone.x_ref = mGui.x_ref_slider.get()
         mDrone.y_ref = mGui.y_ref_slider.get()
-
 
         mDrone.draw_drone(mGui.displayCanvas)
         mDrone.solve_dynamics(mGui.dt)

@@ -55,7 +55,7 @@ class gui:
 
     # Set initialisation parameters
     ICs = [4,0,2,0,0,0]
-    initial_gains = [3,2,9,3,0.1,0.4]
+    initial_gains = [1,8,9,3,0.2,0.5]
 
     t = 0
     dt = 0.01
