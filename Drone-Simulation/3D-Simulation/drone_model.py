@@ -1,12 +1,15 @@
 from scipy.integrate import odeint as Solver
+from math import cos,sin
+import numpy as np
 
 class Drone:
     # drone's physical parameters
     L = 0.2
     m = 0.5
 
-    # environment variables
-    g = 9.81
+
+
+
 
     Kf = 1
     Km = 0.5
@@ -16,10 +19,120 @@ class Drone:
     w3 = 0
     w4 = 0
 
+    # environment variables
+    g = 9.81
+
     def __init__(self,ICs):
         self.Z = ICs
+        self.defMomentsInertia()
+
+    def defMomentsInertia(self):
+        self.Ixx = 2*self.m*self.L**2/12
+        self.Iyy = 2*self.m*self.L**2/12
+        self.Izz = 4*self.m*self.L**2/12
+        self.I = np.array([[self.Ixx,0,0],[0,self.Iyy,0],[0,0,self.Izz]])
+
+    def dynamics(self,t):
+        x = self.Z[0]
+        y = self.Z[1]
+        z = self.Z[2]
+        phi = self.Z[3]
+        theta = self.Z[4]
+        psi = self.Z[5]
+        x_dot = self.Z[6]
+        y_dot = self.Z[7]
+        z_dot = self.Z[8]
+        phi_dot = self.Z[9]
+        theta_dot = self.Z[10]
+        psi_dot = self.Z[11]
+
+        I = self.I
+        m = self.m
+        g = self.g
+        L = self.L
+
+        F1 = self.Kf*self.w1
+        F2 = self.Kf*self.w2
+        F3 = self.Kf*self.w3
+        F4 = self.Kf*self.w4
+
+        Rx = np.array([
+              [1,    0,       0],
+              [0,cos(phi),-sin(phi)],
+              [0,sin(phi),cos(phi)]
+             ])
+
+        Ry = np.array([
+              [ cos(theta),0,sin(theta)],
+              [ 0,         1,     0],
+              [-sin(theta),0,cos(theta)]
+             ])
+
+        Rz = np.array([
+              [cos(psi),-sin(psi),0],
+              [sin(psi), cos(psi),0],
+              [0,          0,    1]
+             ])
+        R = Rz*Rx*Ry
+
+        F_f3 = np.array([[0],[0],[F1+F2+F3+F4]])
+        G_f0 = np.array([[0],[0],[-m*g]])
+
+        rOG_dd_f0 = R*F_f3 + G_f0
+
+        M1 = Km*self.w1
+        M2 = Km*self.w2
+        M3 = Km*self.w3
+        M4 = Km*self.w4
 
 
+        M_f3 = np.array([[L*(F2-F4)],[L*(F3-F1)],[M1-M2+M3-M4]])
+
+        R_AB = np.array([[cos(theta),0,-sin(theta)*cos(phi)],
+                        [0,1,sin(phi)],
+                        [sin(theta),0,cos(phi)*cos(theta)])
+
+        w_A = np.array([[phi_dot],[theta_dot],[psi_dot]])
+        w_B = R_AB*w_A
+
+        inv_I = np.linalg.inv(I)
+
+        w_d_Binv_I*(M_f3 - np.cross(w_B, I*w_B))
+
+
+        Z_dot = [x_dot,x_dd,y_dot,y_dd,theta_dot,theta_dd]
+        return Z_dot
+
+    def controller(self):
+        x_ref = self.x_ref
+        x_dot_ref = 0
+        x_dd_ref = 0
+        Kp_x = self.Kp_x
+        Kd_x = self.Kd_x
+        x = self.Z[0]
+        x_dot = self.Z[1]
+
+        y_ref = self.y_ref
+        y_dot_ref = 0
+        y_dd_ref = 0
+        Kp_y = self.Kp_y
+        Kd_y = self.Kd_y
+        y = self.Z[2]
+        y_dot = self.Z[3]
+
+        theta_c_dot = 0
+        Kp_theta = self.Kp_theta
+        Kd_theta = self.Kd_theta
+        theta = self.Z[4]
+        theta_dot = self.Z[5]
+
+
+        theta_c = -(x_dd_ref + Kp_x*(x_ref-x) + Kd_x*(x_dot_ref-x_dot))/self.g
+        u1 = self.m*(self.g + y_dd_ref + Kp_y*(y_ref-y) + Kd_y*(y_dot_ref-y_dot))
+        u2 = Kp_theta*(theta_c-theta) + Kd_theta*(theta_c_dot-theta_dot)
+
+        self.F_l = (u1-u2)/2
+        self.F_r = (u1+u2)/2
 
     def draw_drone(self,displayCanvas):
         x = self.Z[0]
@@ -71,6 +184,8 @@ class Drone:
         # self.target = displayCanvas.create_oval(self.x_ref-r, self.y_ref-r, self.x_ref+r, self.y_ref+r)
         self.drone = displayCanvas.create_polygon(drone_rotated_translated_vertices, fill="black")
 
+
+
     def check_crash(self):
         x = self.Z[0]
         x_dot = self.Z[1]
@@ -105,56 +220,7 @@ class Drone:
 
         self.Z = Z
 
-    def dynamics(self,Z,t):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
 
-        Izz = (self.m*self.arm_length)/12
-
-        s_theta = math.sin(theta)
-        c_theta = math.cos(theta)
-
-        x_dd = -(self.F_r + self.F_l)*s_theta/self.m
-        y_dd = ((self.F_r + self.F_l)*c_theta - self.g)/self.m
-        theta_dd = (self.F_r - self.F_l)/Izz
-
-        Z_dot = [x_dot,x_dd,y_dot,y_dd,theta_dot,theta_dd]
-        return Z_dot
-
-    def controller(self):
-        x_ref = self.x_ref
-        x_dot_ref = 0
-        x_dd_ref = 0
-        Kp_x = self.Kp_x
-        Kd_x = self.Kd_x
-        x = self.Z[0]
-        x_dot = self.Z[1]
-
-        y_ref = self.y_ref
-        y_dot_ref = 0
-        y_dd_ref = 0
-        Kp_y = self.Kp_y
-        Kd_y = self.Kd_y
-        y = self.Z[2]
-        y_dot = self.Z[3]
-
-        theta_c_dot = 0
-        Kp_theta = self.Kp_theta
-        Kd_theta = self.Kd_theta
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
-
-
-        theta_c = -(x_dd_ref + Kp_x*(x_ref-x) + Kd_x*(x_dot_ref-x_dot))/self.g
-        u1 = self.m*(self.g + y_dd_ref + Kp_y*(y_ref-y) + Kd_y*(y_dot_ref-y_dot))
-        u2 = Kp_theta*(theta_c-theta) + Kd_theta*(theta_c_dot-theta_dot)
-
-        self.F_l = (u1-u2)/2
-        self.F_r = (u1+u2)/2
 
     def printStateVector(self):
         x = self.Z[0]
