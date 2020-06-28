@@ -97,7 +97,13 @@ class Drone:
 
         inv_I = np.linalg.inv(I)
 
-        w_d_Binv_I*(M_f3 - np.cross(w_B, I*w_B))
+        w_d_B = inv_I*(M_f3 - np.cross(w_B, I*w_B))
+        # w_d_A =
+        #
+        # x_dd =
+        # y_dd =
+        # z_dd
+
 
 
         Z_dot = [x_dot,x_dd,y_dot,y_dd,theta_dot,theta_dd]
