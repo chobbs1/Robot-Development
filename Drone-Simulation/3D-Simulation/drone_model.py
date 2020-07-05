@@ -1,15 +1,14 @@
-from scipy.integrate import odeint as Solver
+from scipy.integrate import odeint
 from math import cos,sin
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
+from matplotlib.collections import PolyCollection
 
 class Drone:
     # drone's physical parameters
     L = 0.2
     m = 0.5
-
-
-
-
 
     Kf = 1
     Km = 0.5
@@ -22,8 +21,12 @@ class Drone:
     # environment variables
     g = 9.81
 
-    def __init__(self,ICs):
-        self.Z = ICs
+
+
+
+    def __init__(self,ICs,dt):
+        self.X = ICs
+        self.dt = dt
         self.defMomentsInertia()
 
     def defMomentsInertia(self):
@@ -32,82 +35,135 @@ class Drone:
         self.Izz = 4*self.m*self.L**2/12
         self.I = np.array([[self.Ixx,0,0],[0,self.Iyy,0],[0,0,self.Izz]])
 
-    def dynamics(self,t):
-        x = self.Z[0]
-        y = self.Z[1]
-        z = self.Z[2]
-        phi = self.Z[3]
-        theta = self.Z[4]
-        psi = self.Z[5]
-        x_dot = self.Z[6]
-        y_dot = self.Z[7]
-        z_dot = self.Z[8]
-        phi_dot = self.Z[9]
-        theta_dot = self.Z[10]
-        psi_dot = self.Z[11]
+    def body_frame_dynamics(self,w_B,t):
+        I_mat = np.matrix(self.I)
 
-        I = self.I
-        m = self.m
-        g = self.g
+        inv_I_mat = np.linalg.inv(I_mat)
+        w_B_mat = np.matrix([[w_B[0]],[w_B[1]],[w_B[2]]])
+
+
         L = self.L
 
-        F1 = self.Kf*self.w1
-        F2 = self.Kf*self.w2
-        F3 = self.Kf*self.w3
-        F4 = self.Kf*self.w4
+        M1 = self.Km*self.w1**2
+        M2 = self.Km*self.w2**2
+        M3 = self.Km*self.w3**2
+        M4 = self.Km*self.w4**2
 
-        Rx = np.array([
+        M_fB_mat = np.matrix([[0],[0],[M1-M2+M3-M4]])
+
+
+
+
+
+        w_B_mat_arr = np.squeeze(np.asarray(w_B_mat))
+        print("w_B_mat_arr:")
+        print(w_B_mat_arr)
+
+        I_w_B_arr =  np.squeeze(np.asarray(I_mat*w_B_mat))
+        print("I_w_B_arr:")
+        print(I_w_B_arr)
+
+        cross_prod_arr = np.cross(w_B_mat_arr,I_w_B_arr)
+        print("cross_prod_arr:")
+        print(cross_prod_arr)
+
+
+
+        w_d_B_mat = inv_I_mat*(M_fB_mat - cross_prod_mat)
+        print("w_d_B_mat:")
+        print(w_d_B_mat)
+
+        w_d_B_arr = np.squeeze(np.asarray(w_d_B_mat))
+
+
+        p_dot = w_d_B[0]
+        q_dot = w_d_B[1]
+        r_dot = w_d_B[2]
+        return [p_dot,q_dot,r_dot]
+
+    def angular_dynamics(self,X,t):
+        phi = self.X[6]
+        theta = self.X[7]
+        psi = self.X[8]
+        phi_dot = self.X[9]
+        theta_dot = self.X[10]
+        psi_dot = self.X[11]
+
+        R = np.matrix([
+                [cos(theta),0,-cos(phi)*sin(theta)],
+                [0,1,sin(phi)],
+                [sin(theta),0,cos(phi)*cos(theta)]
+            ])
+
+        w_G = np.matrix([[phi_dot],[theta_dot],[psi_dot]])
+        w_B = R*w_G
+
+        # print(np.asarray(w_B))
+        # .toList()
+        w_B = w_B.tolist()
+        w_B = [w_B[0][0],w_B[1][0],w_B[2][0]]
+
+        t = np.array([0, self.dt])
+
+
+        odeint(self.body_frame_dynamics,w_B,t)
+
+        phi_dot = p[-1,:]
+        theta_dot = q[-1,:]
+        psi_dot = r[-1,:]
+
+        return [phi_dot,theta_dot,psi_dot,phi_dd,theta_dd,psi_dd]
+
+
+    def linear_dynamics(self,X,t):
+        x = self.X[0]
+        y = self.X[1]
+        z = self.X[2]
+        x_dot = self.X[3]
+        y_dot = self.X[4]
+        z_dot = self.X[5]
+
+        phi = self.X[6]
+        theta = self.X[7]
+        psi = self.X[8]
+
+        m = self.m
+        g = self.g
+
+        F1 = self.Kf*self.w1**2
+        F2 = self.Kf*self.w2**2
+        F3 = self.Kf*self.w3**2
+        F4 = self.Kf*self.w4**2
+
+        Rx = np.matrix([
               [1,    0,       0],
               [0,cos(phi),-sin(phi)],
               [0,sin(phi),cos(phi)]
              ])
 
-        Ry = np.array([
+        Ry = np.matrix([
               [ cos(theta),0,sin(theta)],
               [ 0,         1,     0],
               [-sin(theta),0,cos(theta)]
              ])
 
-        Rz = np.array([
+        Rz = np.matrix([
               [cos(psi),-sin(psi),0],
               [sin(psi), cos(psi),0],
               [0,          0,    1]
              ])
         R = Rz*Rx*Ry
 
-        F_f3 = np.array([[0],[0],[F1+F2+F3+F4]])
-        G_f0 = np.array([[0],[0],[-m*g]])
+        F_f3 = np.matrix([[0],[0],[F1+F2+F3+F4]])
+        G_f0 = np.matrix([[0],[0],[-m*g]])
+        rOG_dd_f0 = (R*F_f3 + G_f0)/m
 
-        rOG_dd_f0 = R*F_f3 + G_f0
+        x_dd = rOG_dd_f0[0]
+        y_dd = rOG_dd_f0[1]
+        z_dd = rOG_dd_f0[2]
 
-        M1 = Km*self.w1
-        M2 = Km*self.w2
-        M3 = Km*self.w3
-        M4 = Km*self.w4
-
-
-        M_f3 = np.array([[L*(F2-F4)],[L*(F3-F1)],[M1-M2+M3-M4]])
-
-        R_AB = np.array([[cos(theta),0,-sin(theta)*cos(phi)],
-                        [0,1,sin(phi)],
-                        [sin(theta),0,cos(phi)*cos(theta)])
-
-        w_A = np.array([[phi_dot],[theta_dot],[psi_dot]])
-        w_B = R_AB*w_A
-
-        inv_I = np.linalg.inv(I)
-
-        w_d_B = inv_I*(M_f3 - np.cross(w_B, I*w_B))
-        # w_d_A =
-        #
-        # x_dd =
-        # y_dd =
-        # z_dd
-
-
-
-        Z_dot = [x_dot,x_dd,y_dot,y_dd,theta_dot,theta_dd]
-        return Z_dot
+        X_dot = [x_dot,y_dot,z_dot,x_dd,y_dd,z_dd]
+        return X_dot
 
     def controller(self):
         x_ref = self.x_ref
@@ -214,33 +270,39 @@ class Drone:
         elif theta < -math.pi:
             self.Z[4] = self.Z[4] + 2*math.pi
 
-    def solve_dynamics(self,dt):
-        t = np.array([0, dt])
-
-        self.ensure_circularity()
-
-        self.controller()
-
-        Z = odeint(self.dynamics,self.Z,t)
-        Z = Z[-1]
-
-        self.Z = Z
+    def solve_dynamics(self):
+        t = np.array([0, self.dt])
 
 
+        linear_X = self.X[:6]
+        # print(linear_X)
+        linear_X = odeint(self.linear_dynamics,linear_X,t)
+        linear_X = linear_X[-1]
 
-    def printStateVector(self):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
+        angular_X = self.X[6:]
+        # print(angular_X)
+        angular_X = odeint(self.angular_dynamics,angular_X,t)
 
-        print("x = {}".format(x))
-        print("x_dot = {}".format(x_dot))
-        print("y = {}".format(y))
-        print("y_dot = {}".format(y_dot))
-        print("theta = {}".format(theta))
-        print("theta_dot = {}".format(theta_dot))
-        print("F_r = {}".format(self.F_r))
-        print("F_l = {}".format(self.F_l))
+
+        # print(angular_X)
+        #
+        # self.X = [linear_X,angular_X]
+        # print(linear_X)
+
+
+    # def printStateVector(self):
+    #     x = self.Z[0]
+    #     x_dot = self.Z[1]
+    #     y = self.Z[2]
+    #     y_dot = self.Z[3]
+    #     theta = self.Z[4]
+    #     theta_dot = self.Z[5]
+    #
+    #     print("x = {}".format(x))
+    #     print("x_dot = {}".format(x_dot))
+    #     print("y = {}".format(y))
+    #     print("y_dot = {}".format(y_dot))
+    #     print("theta = {}".format(theta))
+    #     print("theta_dot = {}".format(theta_dot))
+    #     print("F_r = {}".format(self.F_r))
+    #     print("F_l = {}".format(self.F_l))
