@@ -1,9 +1,10 @@
 from scipy.integrate import odeint
-from math import cos,sin
+from math import cos,sin,pi
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import axes3d
 from matplotlib.collections import PolyCollection
+import sys
 
 class Drone:
     # drone's physical parameters
@@ -11,7 +12,10 @@ class Drone:
     m = 0.5
 
     Kf = 1
-    Km = 0.5
+    Km = 1
+
+    F = [0,0,0,0]
+    M = [0,0,0,0]
 
     w1 = 0
     w2 = 0
@@ -21,6 +25,10 @@ class Drone:
     # environment variables
     g = 9.81
 
+    # who the fuck knows
+    phi0_c = 0
+    theta0_c = 0
+    psi0_c = 0
 
 
 
@@ -35,86 +43,6 @@ class Drone:
         self.Izz = 4*self.m*self.L**2/12
         self.I = np.array([[self.Ixx,0,0],[0,self.Iyy,0],[0,0,self.Izz]])
 
-    def body_frame_dynamics(self,w_B,t):
-        I_mat = np.matrix(self.I)
-
-        inv_I_mat = np.linalg.inv(I_mat)
-        w_B_mat = np.matrix([[w_B[0]],[w_B[1]],[w_B[2]]])
-
-
-        L = self.L
-
-        M1 = self.Km*self.w1**2
-        M2 = self.Km*self.w2**2
-        M3 = self.Km*self.w3**2
-        M4 = self.Km*self.w4**2
-
-        M_fB_mat = np.matrix([[0],[0],[M1-M2+M3-M4]])
-
-
-
-
-
-        w_B_mat_arr = np.squeeze(np.asarray(w_B_mat))
-        print("w_B_mat_arr:")
-        print(w_B_mat_arr)
-
-        I_w_B_arr =  np.squeeze(np.asarray(I_mat*w_B_mat))
-        print("I_w_B_arr:")
-        print(I_w_B_arr)
-
-        cross_prod_arr = np.cross(w_B_mat_arr,I_w_B_arr)
-        print("cross_prod_arr:")
-        print(cross_prod_arr)
-
-
-
-        w_d_B_mat = inv_I_mat*(M_fB_mat - cross_prod_mat)
-        print("w_d_B_mat:")
-        print(w_d_B_mat)
-
-        w_d_B_arr = np.squeeze(np.asarray(w_d_B_mat))
-
-
-        p_dot = w_d_B[0]
-        q_dot = w_d_B[1]
-        r_dot = w_d_B[2]
-        return [p_dot,q_dot,r_dot]
-
-    def angular_dynamics(self,X,t):
-        phi = self.X[6]
-        theta = self.X[7]
-        psi = self.X[8]
-        phi_dot = self.X[9]
-        theta_dot = self.X[10]
-        psi_dot = self.X[11]
-
-        R = np.matrix([
-                [cos(theta),0,-cos(phi)*sin(theta)],
-                [0,1,sin(phi)],
-                [sin(theta),0,cos(phi)*cos(theta)]
-            ])
-
-        w_G = np.matrix([[phi_dot],[theta_dot],[psi_dot]])
-        w_B = R*w_G
-
-        # print(np.asarray(w_B))
-        # .toList()
-        w_B = w_B.tolist()
-        w_B = [w_B[0][0],w_B[1][0],w_B[2][0]]
-
-        t = np.array([0, self.dt])
-
-
-        odeint(self.body_frame_dynamics,w_B,t)
-
-        phi_dot = p[-1,:]
-        theta_dot = q[-1,:]
-        psi_dot = r[-1,:]
-
-        return [phi_dot,theta_dot,psi_dot,phi_dd,theta_dd,psi_dd]
-
-
     def linear_dynamics(self,X,t):
         x = self.X[0]
         y = self.X[1]
@@ -127,6 +55,7 @@ class Drone:
         theta = self.X[7]
         psi = self.X[8]
 
+
         m = self.m
         g = self.g
 
@@ -135,28 +64,31 @@ class Drone:
         F3 = self.Kf*self.w3**2
         F4 = self.Kf*self.w4**2
 
-        Rx = np.matrix([
+
+        Rx = np.array([
               [1,    0,       0],
               [0,cos(phi),-sin(phi)],
               [0,sin(phi),cos(phi)]
              ])
 
-        Ry = np.matrix([
+        Ry = np.array([
               [ cos(theta),0,sin(theta)],
               [ 0,         1,     0],
               [-sin(theta),0,cos(theta)]
              ])
 
-        Rz = np.matrix([
+
+        Rz = np.array([
               [cos(psi),-sin(psi),0],
               [sin(psi), cos(psi),0],
               [0,          0,    1]
              ])
-        R = Rz*Rx*Ry
+        R = np.matmul(Rz,np.matmul(Rx,Ry))
 
-        F_f3 = np.matrix([[0],[0],[F1+F2+F3+F4]])
-        G_f0 = np.matrix([[0],[0],[-m*g]])
-        rOG_dd_f0 = (R*F_f3 + G_f0)/m
+
+        F_f3 = np.array([[0],[0],[F1+F2+F3+F4]])
+        G_f0 = np.array([[0],[0],[-m*g]])
+        rOG_dd_f0 = (np.add(np.matmul(R,F_f3),G_f0))/m
 
         x_dd = rOG_dd_f0[0]
         y_dd = rOG_dd_f0[1]
@@ -165,144 +97,180 @@ class Drone:
         X_dot = [x_dot,y_dot,z_dot,x_dd,y_dd,z_dd]
         return X_dot
 
-    def controller(self):
-        x_ref = self.x_ref
-        x_dot_ref = 0
-        x_dd_ref = 0
-        Kp_x = self.Kp_x
-        Kd_x = self.Kd_x
-        x = self.Z[0]
-        x_dot = self.Z[1]
+    def update_controller(self):
 
-        y_ref = self.y_ref
-        y_dot_ref = 0
-        y_dd_ref = 0
-        Kp_y = self.Kp_y
-        Kd_y = self.Kd_y
-        y = self.Z[2]
-        y_dot = self.Z[3]
+        # get all state values
+        x = self.X[0]
+        y = self.X[1]
+        z = self.X[2]
+        x_dot = self.X[3]
+        y_dot = self.X[4]
+        z_dot = self.X[5]
+        phi = self.X[6]
+        theta = self.X[7]
+        psi = self.X[8]
+        phi_dot = self.X[9]
+        theta_dot = self.X[10]
+        psi_dot = self.X[11]
 
-        theta_c_dot = 0
-        Kp_theta = self.Kp_theta
-        Kd_theta = self.Kd_theta
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
+        theta_G = np.array(self.X[6:9])
+        w_G = np.array(self.X[9:12])
+        w_B = self.rotate2body(theta_G,w_G).tolist()
+        p = w_B[0]
+        q = w_B[1]
+        r = w_B[2]
 
+        # define reference values
+        ref = [0,0,2,0]
+        ref_dot = [0,0,0,0]
+        ref_dd = [0,0,0,0]
 
-        theta_c = -(x_dd_ref + Kp_x*(x_ref-x) + Kd_x*(x_dot_ref-x_dot))/self.g
-        u1 = self.m*(self.g + y_dd_ref + Kp_y*(y_ref-y) + Kd_y*(y_dot_ref-y_dot))
-        u2 = Kp_theta*(theta_c-theta) + Kd_theta*(theta_c_dot-theta_dot)
+        # define gains
+        Kp = [1,1,5,
+              0.1,0.1,0.1]
+        Kd = [0,0,1,
+              0,0,0]
 
-        self.F_l = (u1-u2)/2
-        self.F_r = (u1+u2)/2
-
-    def draw_drone(self,displayCanvas):
-        x = self.Z[0]
-        y = self.Z[2]
-        theta = self.Z[4]
-
-        # x_target
-        # y_target
-
-        arm_length = self.arm_length
-        arm_width = self.arm_width
-        motor_height = self.motor_height
-        motor_width = self.motor_width
-
-        drone_unrotated_untranslated_vertices = [
-            [-arm_length,0],
-            [-arm_length,motor_height],
-            [-arm_length+motor_width,motor_height],
-            [-arm_length+motor_width,arm_width],
-            [arm_length-motor_width,arm_width],
-            [arm_length-motor_width,motor_height],
-            [arm_length,motor_height],
-            [arm_length,0],
-        ]
-
-        c_theta = math.cos(theta)
-        s_theta = math.sin(theta)
-        drone_rotated_translated_vertices = []
-
-        for coords in drone_unrotated_untranslated_vertices:
-            x0 = coords[0]
-            y0 = coords[1]
-
-            x1 = x0*c_theta - y0*s_theta
-            y1 = x0*s_theta + y0*c_theta
-
-            x1 = (x1+x)*self.SCALE_FACTOR
-            y1 = self.HEIGHT_DISPLAY - (y1+y)*self.SCALE_FACTOR
-
-            drone_rotated_translated_vertices.append([x1,y1])
+        #calculate commanded linear accelerations
+        r1_dd_c = ref_dd[0] + Kd[0]*(ref_dot[0]-x_dot) + Kp[0]*(ref[0]-x)
+        r2_dd_c = ref_dd[1] + Kd[1]*(ref_dot[1]-y_dot) + Kp[1]*(ref[1]-y)
+        r3_dd_c = ref_dd[2] + Kd[2]*(ref_dot[2]-z_dot) + Kp[2]*(ref[2]-z)
 
 
-        try:
-            displayCanvas.delete(self.drone)
-            # displayCanvas.delete(self.target)
-        except AttributeError:
-            pass
-        r = 5
-        # self.target = displayCanvas.create_oval(self.x_ref-r, self.y_ref-r, self.x_ref+r, self.y_ref+r)
-        self.drone = displayCanvas.create_polygon(drone_rotated_translated_vertices, fill="black")
+        # calculate commanded ancular positions
+        psi_des = ref[3]
+        phi_c = (r1_dd_c*sin(psi_des) - r2_dd_c*cos(psi_des))/self.g
+        theta_c = (r1_dd_c*cos(psi_des) + r2_dd_c*sin(psi_des))/self.g
+        psi_c = psi_des
 
+        # derive commanded ancular positions to get angular rates
+        p_c = (phi_c - self.phi0_c)/self.dt
+        q_c = (theta_c - self.theta0_c)/self.dt
+        r_c = (psi_c - self.psi0_c)/self.dt
+
+        # update old positions to obtain derivatives
+        self.phi0_c = phi_c
+        self.theta0_c = theta_c
+        self.psi0_c = psi_c
+
+        # calculate required hovering forces and moments
+        u1 = self.m*(self.g + r3_dd_c)
+        u2_x = Kp[3]*(phi_c - phi) + Kd[3]*(p_c - p)
+        u2_y = Kp[4]*(theta_c - theta) + Kd[4]*(q_c - q)
+        u2_z = Kp[5]*(psi_c - psi) + Kd[5]*(r_c - r)
+
+        # define some new variables for notational simplicity
+        a = u2_z/self.Km
+        b = u1/self.Kf
+        c = u2_x/(self.L*self.Kf)
+        d = u2_y/(self.L*self.Kf)
+
+        g1 =  a/4 + b/4 - d/2
+        g2 = -a/4 + b/4 + c/2
+        g3 =  a/4 + b/4 + d/2
+        g4 = -a/4 + b/4 - c/2
+
+        self.w1 = g1**2
+        self.w2 = g2**2
+        self.w3 = g3**2
+        self.w4 = g4**2
 
 
     def check_crash(self):
-        x = self.Z[0]
-        x_dot = self.Z[1]
-        y = self.Z[2]
-        y_dot = self.Z[3]
-        theta = self.Z[4]
-        theta_dot = self.Z[5]
+        z = self.X[2]
 
-        if y<0:
+        if z<0:
             print("Crashed into ground")
             return False
-
-
         return True
 
-    def ensure_circularity(self):
-        theta = self.Z[4]
-        if theta > math.pi:
-            self.Z[4] = self.Z[4] - 2*math.pi
-        elif theta < -math.pi:
-            self.Z[4] = self.Z[4] + 2*math.pi
+    def rotate2body(self,theta_G_IC,w_G_IC):
+        phi = theta_G_IC[0]
+        theta = theta_G_IC[1]
+
+        R = np.array([
+                [cos(theta),0,-cos(phi)*sin(theta)],
+                [0,1,sin(phi)],
+                [sin(theta),0,cos(phi)*cos(theta)]
+            ])
+
+        return np.matmul(R,w_G_IC)
+
+    def angular_acc(self,w_B,t):
+        F1 = self.Kf*self.w1**2
+        F2 = self.Kf*self.w2**2
+        F3 = self.Kf*self.w3**2
+        F4 = self.Kf*self.w4**2
+
+        M1 = self.Km*self.w1**2
+        M2 = self.Km*self.w2**2
+        M3 = self.Km*self.w3**2
+        M4 = self.Km*self.w4**2
+
+        F = [F1,F2,F3,F4]
+        M = [M1,M2,M3,M4]
+
+        inv_I = np.linalg.inv(self.I)
+        torques = np.array([self.L*(F[1]-F[3]),
+                         self.L*(F[2]-F[0]),
+                         M[0]-M[1]+M[2]-M[3]])
+
+
+        return np.matmul(inv_I,
+                    np.subtract(torques,
+                        np.cross(w_B,
+                            np.matmul(self.I,
+                                w_B))))
+
+    def rotate2inertial(self,theta_G_IC,w_B):
+        phi = theta_G_IC[0]
+        theta = theta_G_IC[1]
+
+        R = np.array([
+                [cos(theta),0,-cos(phi)*sin(theta)],
+                [0,1,sin(phi)],
+                [sin(theta),0,cos(phi)*cos(theta)]
+            ])
+
+        return np.matmul(np.linalg.inv(R),w_B)
+
+
+    def ang_vel_inert(self,X,t):
+        w_G = self.X[9:12]
+        return w_G
 
     def solve_dynamics(self):
-        t = np.array([0, self.dt])
+        t = np.array([0,self.dt])
 
 
-        linear_X = self.X[:6]
-        # print(linear_X)
+        # linear dynamics
+        rOG_IC = np.array(self.X[0:3])
+        rOG_d_IC = np.array(self.X[3:6])
+
+        linear_X = np.concatenate([rOG_IC,rOG_d_IC])
+
         linear_X = odeint(self.linear_dynamics,linear_X,t)
         linear_X = linear_X[-1]
 
-        angular_X = self.X[6:]
-        # print(angular_X)
-        angular_X = odeint(self.angular_dynamics,angular_X,t)
+
+        # angular dynamics
+
+        theta_G_IC = np.array(self.X[6:9])
+        w_G_IC = np.array(self.X[9:12])
+
+        w_B_IC = self.rotate2body(theta_G_IC,w_G_IC)
+        w_B = odeint(self.angular_acc,w_B_IC,t)
+        w_B = w_B[-1]
+
+        w_G = self.rotate2inertial(theta_G_IC,w_B)
+        self.X[9:12] = w_G
+
+        theta_G = odeint(self.ang_vel_inert,theta_G_IC,t)
+        theta_G = theta_G[-1]
 
 
-        # print(angular_X)
-        #
-        # self.X = [linear_X,angular_X]
-        # print(linear_X)
+        # update all
+        self.X[:6] = linear_X
 
-
-    # def printStateVector(self):
-    #     x = self.Z[0]
-    #     x_dot = self.Z[1]
-    #     y = self.Z[2]
-    #     y_dot = self.Z[3]
-    #     theta = self.Z[4]
-    #     theta_dot = self.Z[5]
-    #
-    #     print("x = {}".format(x))
-    #     print("x_dot = {}".format(x_dot))
-    #     print("y = {}".format(y))
-    #     print("y_dot = {}".format(y_dot))
-    #     print("theta = {}".format(theta))
-    #     print("theta_dot = {}".format(theta_dot))
-    #     print("F_r = {}".format(self.F_r))
-    #     print("F_l = {}".format(self.F_l))
+        self.X[6:9] = theta_G
+        self.X[9:12] = w_G
