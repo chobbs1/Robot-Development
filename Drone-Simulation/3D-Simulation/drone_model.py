@@ -97,6 +97,11 @@ class Drone:
         X_dot = [x_dot,y_dot,z_dot,x_dd,y_dd,z_dd]
         return X_dot
 
+    def updateReferences(self,ref):
+        self.pos_refs = ref[0:4]
+        self.vel_refs = ref[4:8]
+        self.acc_refs = ref[8:12]
+
     def update_controller(self):
 
         # get all state values
@@ -121,21 +126,25 @@ class Drone:
         r = w_B[2]
 
         # define reference values
-        ref = [0,0,2,0]
-        ref_dot = [0,0,0,0]
-        ref_dd = [0,0,0,0]
+        # ref = [0,0,2,0]
+        # ref_dot = [0,0,0,0]
+        # ref_dd = [0,0,0,0]
+
+        ref = self.pos_refs
+        ref_dot = self.vel_refs
+        ref_dd = self.acc_refs
 
         # define gains
-        Kp = [1,1,5,
+        Kp = [1,1,3,
               0.1,0.1,0.1]
-        Kd = [0,0,1,
+        Kd = [0,0.3,1,
               0,0,0]
 
         #calculate commanded linear accelerations
         r1_dd_c = ref_dd[0] + Kd[0]*(ref_dot[0]-x_dot) + Kp[0]*(ref[0]-x)
         r2_dd_c = ref_dd[1] + Kd[1]*(ref_dot[1]-y_dot) + Kp[1]*(ref[1]-y)
         r3_dd_c = ref_dd[2] + Kd[2]*(ref_dot[2]-z_dot) + Kp[2]*(ref[2]-z)
-
+        # print(Kp[0]*(ref[0]-x))
 
         # calculate commanded ancular positions
         psi_des = ref[3]

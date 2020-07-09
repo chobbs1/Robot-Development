@@ -4,6 +4,7 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from trajectory_planner import Trajectories
 
 
 def init_plot():
@@ -92,29 +93,38 @@ def plot_drone(X):
         rot_arm2_z.append(rot_arm2[2]+z)
 
 
-    arm1 = ax.plot(rot_arm1_x,rot_arm1_y,rot_arm1_z,color='blue',linewidth=3,antialiased=False)
-    arm2 = ax.plot(rot_arm2_x,rot_arm2_y,rot_arm2_z,color='red',linewidth=3,antialiased=False)
+    arm1 = ax.plot(rot_arm1_x,rot_arm1_y,rot_arm1_z,
+            color='blue',linewidth=3,antialiased=False)
+    arm2 = ax.plot(rot_arm2_x,rot_arm2_y,rot_arm2_z,
+            color='red',linewidth=3,antialiased=False)
 
 
 t = 0
 dt = 0.01
+duration = 10
+time_steps = int(duration/dt)+1
 
-ICs = [0,0,2,        # rOG
-       0,0,pi/4,        # rOG_d
+ICs = [0,1,2,        # rOG
+       0,0,0,        # rOG_d
        0,0,0,        # theta
        0,0,0]    # theta_d
 
+X_T = [0,0,2,        # rOG
+       0,0,0,        # rOG_d
+       0,0,0,        # theta
+       0,0,0]
 
 mDrone = Drone(ICs,dt)
-
-# for i in range(1):
-#     mDrone.update_controller()
-#     mDrone.solve_dynamics()
+traj_plan = Trajectories()
+traj_plan.setCoeff_MinJerkTraj(ICs,X_T,duration)
 
 fig, ax = init_plot()
+
 while mDrone.check_crash():
     plot_drone(mDrone.X)
 
+    ref = traj_plan.getReferences(t)
+    mDrone.updateReferences(ref)
     mDrone.update_controller()
     mDrone.solve_dynamics()
     t+=dt
@@ -123,3 +133,31 @@ while mDrone.check_crash():
     #     mDrone.X[3],mDrone.X[4],mDrone.X[5]),end='\r')
 
     update_plot()
+
+
+
+# t_vec = []
+# x_ref = []
+# x_dot_ref = []
+# x_dd_ref = []
+
+# for i in range(time_steps):
+#     ref = traj_plan.getReferences(t)
+#     t+=dt
+#
+#     t_vec.append(t)
+#     x_ref.append(ref[0])
+#     x_dot_ref.append(ref[1])
+#     x_dd_ref.append(ref[2])
+#
+# t_vec = np.array(t_vec)
+# x_ref = np.array(x_ref)
+# x_dot_ref = np.array(x_dot_ref)
+# x_dd_ref = np.array(x_dd_ref)
+# #
+# # print(t_vec)
+# fig, ax = plt.subplots()
+# ax.plot(t_vec, x_ref)
+# ax.plot(t_vec, x_dot_ref)
+# ax.plot(t_vec, x_dd_ref)
+# plt.show()
