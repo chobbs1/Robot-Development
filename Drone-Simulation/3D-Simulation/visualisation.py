@@ -13,9 +13,8 @@ class GUI():
         self.ax.set_zlim3d([0, 5.0])
         self.ax.set_zlabel('Z')
         self.ax.set_title('Quadcopter Simulation')
-
+        self.
 
 
     def init_plot(self):
         self.ax.plot([],[],[],color='blue',linewidth=3)
-        self.fig.show()

@@ -21,6 +21,7 @@ class Drone:
     w2 = 0
     w3 = 0
     w4 = 0
+    motor_sat_point = 4000
 
     # environment variables
     g = 9.81
@@ -30,6 +31,11 @@ class Drone:
     theta0_c = 0
     psi0_c = 0
 
+    # gains
+    Kp = [1,1,3,
+          0.1,0.1,0.1]
+    Kd = [0,0.3,1,
+          0,0,0.001]
 
 
     def __init__(self,ICs,dt):
@@ -135,10 +141,8 @@ class Drone:
         ref_dd = self.acc_refs
 
         # define gains
-        Kp = [1,1,3,
-              0.1,0.1,0.1]
-        Kd = [0,0.3,1,
-              0,0,0]
+        Kp = self.Kp
+        Kd = self.Kd
 
         #calculate commanded linear accelerations
         r1_dd_c = ref_dd[0] + Kd[0]*(ref_dot[0]-x_dot) + Kp[0]*(ref[0]-x)
