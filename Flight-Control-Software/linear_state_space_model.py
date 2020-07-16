@@ -30,23 +30,23 @@ from sympy import eye,exp,simplify,Symbol,Function,cos,sin,Matrix,Transpose,diff
 #
 # print(Bk)
 
-# t = Symbol("t")
-#
-# x = Function("x")(t)
-# y = Function("y")(t)
-# z = Function("z")(t)
-#
-# x_dot = diff(x,t)
-# y_dot = diff(y,t)
-# z_dot = diff(z,t)
-#
-# phi = Function("phi")(t)
-# theta = Function("theta")(t)
-# psi = Function("psi")(t)
-#
-# phi_dot = diff(phi,t)
-# theta_dot = diff(theta,t)
-# psi_dot = diff(psi,t)
+t = Symbol("t")
+
+x = Function("x")(t)
+y = Function("y")(t)
+z = Function("z")(t)
+
+x_dot = diff(x,t)
+y_dot = diff(y,t)
+z_dot = diff(z,t)
+
+phi = Function("phi")(t)
+theta = Function("theta")(t)
+psi = Function("psi")(t)
+
+phi_dot = diff(phi,t)
+theta_dot = diff(theta,t)
+psi_dot = diff(psi,t)
 #
 # F1 = Symbol("F1")
 # F2 = Symbol("F2")
@@ -68,26 +68,35 @@ from sympy import eye,exp,simplify,Symbol,Function,cos,sin,Matrix,Transpose,diff
 # m = Symbol("m")
 # g = Symbol("g")
 #
-# Rx = Matrix([
-#       [1,    0,       0],
-#       [0,cos(phi),-sin(phi)],
-#       [0,sin(phi),cos(phi)]
-#      ])
-#
-# Ry = Matrix([
-#       [cos(theta),0,sin(theta)],
-#       [0,         1,     0],
-#       [-sin(theta),0,cos(theta)]
-#      ])
-#
-# Rz = Matrix([
-#       [cos(psi),-sin(psi),0],
-#       [sin(psi),cos(psi),0],
-#       [0,          0,    1]
-#      ])
-#
-# R = Rz*Rx*Ry
-# print(R)
+Rx = Matrix([
+      [1,    0,       0],
+      [0,cos(phi),-sin(phi)],
+      [0,sin(phi),cos(phi)]
+     ])
+
+Ry = Matrix([
+      [cos(theta),0,sin(theta)],
+      [0,         1,     0],
+      [-sin(theta),0,cos(theta)]
+     ])
+
+Rz = Matrix([
+      [cos(psi),-sin(psi),0],
+      [sin(psi),cos(psi),0],
+      [0,          0,    1]
+     ])
+
+temp = Matrix([
+      [0,0,1],
+      [0,1,0],
+      [1,          0,    1]
+     ])
+
+R = Rz*temp
+print(diff(R,psi))
+
+
+
 # U1 = Matrix([
 #       [0],
 #       [0],
@@ -161,35 +170,35 @@ from sympy import eye,exp,simplify,Symbol,Function,cos,sin,Matrix,Transpose,diff
 #
 #
 # #-------------------------------------------------------------------------------
-import control
-from control import ss
-from control.matlab import c2d,obsv
-from numpy.linalg import matrix_rank
-
-Ts = 0.01
-
-Ixx = 1
-Iyy = 1
-Izz = 1
-
-A = [[0,1,0,0,0,0],
-     [0,0,0,0,0,0],
-     [0,0,0,1,0,0],
-     [0,0,0,0,0,0],
-     [0,0,0,0,0,1],
-     [0,0,0,0,0,0]]
-
-B = [[0,0,0],
-     [1/Ixx,0,0],
-     [0,0,0],
-     [0,1/Iyy,0],
-     [0,0,0],
-     [0,0,1/Izz]]
-
-C =  [1,1,1,1,1,1]
-D = 0
-
-sys_c = ss(A,B,C,D,Ts)
+# import control
+# from control import ss
+# from control.matlab import c2d,obsv
+# from numpy.linalg import matrix_rank
+#
+# Ts = 0.01
+#
+# Ixx = 1
+# Iyy = 1
+# Izz = 1
+#
+# A = [[0,1,0,0,0,0],
+#      [0,0,0,0,0,0],
+#      [0,0,0,1,0,0],
+#      [0,0,0,0,0,0],
+#      [0,0,0,0,0,1],
+#      [0,0,0,0,0,0]]
+#
+# B = [[0,0,0],
+#      [1/Ixx,0,0],
+#      [0,0,0],
+#      [0,1/Iyy,0],
+#      [0,0,0],
+#      [0,0,1/Izz]]
+#
+# C =  [1,1,1,1,1,1]
+# D = 0
+#
+# sys_c = ss(A,B,C,D,Ts)
 # sys_d = c2d(sys_c,Ts)
 
 # print(sys_c)
@@ -225,4 +234,4 @@ sys_c = ss(A,B,C,D,Ts)
 # sys_d = c2d(sys_c,Ts)
 #
 # print(sys_d)
-print(matrix_rank(obsv(A,C)))
+# print(matrix_rank(obsv(A,C)))
