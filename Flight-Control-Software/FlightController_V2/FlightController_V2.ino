@@ -50,15 +50,7 @@ mtx_type R_prime[ROT][ROT] = {
 };
 
 mtx_type mu[STATES][VEC];
-mtx_type g_prime[STATES][STATES] = {
-  {1,0,0,Ts,0,0,0},
-  {0,1,0,0,Ts,0,0},
-  {0,0,1,0,0,Ts,0},
-  {0,0,0,1,0,0,0},
-  {0,0,0,0,1,0,0},
-  {0,0,0,0,0,1,0},
-  {0,0,0,0,0,0,1},
-};
+
 mtx_type U[ACTUATORS][VEC];
 
 mtx_type SIG[STATES][STATES] = {
@@ -70,18 +62,11 @@ mtx_type SIG[STATES][STATES] = {
   {0,0,0,0,0,1,0},
   {0,0,0,0,0,0,1}};
 
-mtx_type Q[STATES][STATES] = {
-  {1,0,0,0,0,0,0},
-  {0,1,0,0,0,0,0},
-  {0,0,1,0,0,0,0},
-  {0,0,0,1,0,0,0},
-  {0,0,0,0,1,0,0},
-  {0,0,0,0,0,1,0},
-  {0,0,0,0,0,0,1}};
 
 
 
-mtx_type Kt[STATES][STATES];
+
+
   
 
 
@@ -104,7 +89,7 @@ void loop() {
 
   predict_state();
   read_sensors();
-  update_state();
+//  update_state();
 
   while (millis() - loop_start < 100) {}
 }
@@ -141,6 +126,16 @@ void update_rotation_mat() {
 void predict_state() {
 //  Serial.println("predict_state");
   update_rotation_mat();
+
+  mtx_type g_prime[STATES][STATES] = {
+  {1,0,0,Ts,0,0,0},
+  {0,1,0,0,Ts,0,0},
+  {0,0,1,0,0,Ts,0},
+  {0,0,0,1,0,0,0},
+  {0,0,0,0,1,0,0},
+  {0,0,0,0,0,1,0},
+  {0,0,0,0,0,0,1},
+};
   
   // update transition matrix
   mu[0][0] = x + x_dot*Ts;
@@ -158,6 +153,14 @@ void predict_state() {
   g_prime[5][6] = Ts*(R_prime[2][0]*U[0][0] + R_prime[2][1]*U[1][0] + R_prime[2][2]*U[2][0]);
   
   // update covariance matrix: ¯Σt = (Gt * Σt−1 * GT) + Qt
+  mtx_type Q[STATES][STATES] = {
+  {1,0,0,0,0,0,0},
+  {0,1,0,0,0,0,0},
+  {0,0,1,0,0,0,0},
+  {0,0,0,1,0,0,0},
+  {0,0,0,0,1,0,0},
+  {0,0,0,0,0,1,0},
+  {0,0,0,0,0,0,1}};
   mtx_type temp1[STATES][STATES];
 
   Matrix.Multiply((mtx_type*)g_prime, (mtx_type*)SIG, STATES, STATES, STATES, (mtx_type*)temp1);
@@ -167,57 +170,63 @@ void predict_state() {
 }
 
 void update_state() {
-  
   // compute kalman gain
-//  mtx_type Rt[STATES][STATES] = {
-//  {1,0,0,0,0,0,0},
-//  {0,1,0,0,0,0,0},
-//  {0,0,1,0,0,0,0},
-//  {0,0,0,1,0,0,0},
-//  {0,0,0,0,1,0,0},
-//  {0,0,0,0,0,1,0},
-//  {0,0,0,0,0,0,1}};
-//  
-//  mtx_type H[STATES][STATES] = {
-//  {1,0,0,0,0,0,0},
-//  {0,1,0,0,0,0,0},
-//  {0,0,1,0,0,0,0},
-//  {0,0,0,1,0,0,0},
-//  {0,0,0,0,1,0,0},
-//  {0,0,0,0,0,1,0},
-//  {0,0,0,0,0,0,1}};
-//
-//  mtx_type temp[STATES][STATES];
-//
-//  Matrix.Add((mtx_type*) SIG, (mtx_type*) Rt, STATES, STATES, (mtx_type*) temp);
-//  Matrix.Invert((mtx_type*)temp, STATES);
-//  Matrix.Multiply((mtx_type*)SIG, (mtx_type*)temp, STATES, STATES, STATES, (mtx_type*)Kt);
+  mtx_type Kt[STATES][STATES];
+  double Rt[STATES] = {1,1,1,1,1,1,1};
+  mtx_type SIG_plus_Rt[STATES][STATES];
 
+  for(int i=0;i<STATES;i++) {
+    for(int j=0;j<STATES;j++) {
+      if(i==j) {
+        SIG_plus_Rt[i][j] = SIG[i][j] + Rt[i];
+      } 
+      else {
+        SIG_plus_Rt[i][j] = SIG[i][j];
+      }
+    }
+  }
 
+  Matrix.Invert((mtx_type*)SIG_plus_Rt, STATES);
+  Matrix.Multiply((mtx_type*)SIG, (mtx_type*)SIG_plus_Rt, STATES, STATES, STATES, (mtx_type*)Kt);
 
 
 
   // update state
-//  mtx_type state_diff[STATES][VEC] = {{x_meas-x},{y_meas-y},{z_meas-z},{x_dot_meas-x_dot},
-//                                {y_dot_meas-y_dot},{z_dot_meas-z_dot},{psi_z-psi}};
-//
-//  mtx_type temp1[STATES][VEC];
-//  Matrix.Multiply((mtx_type*)Kt, (mtx_type*)state_diff, STATES, STATES, VEC, (mtx_type*)temp1);
-//  Matrix.Add((mtx_type*) temp1, (mtx_type*) mu, STATES, STATES, (mtx_type*) mu);
-//
-//
-//  // update covariance
-//  mtx_type I_minus_Kt[STATES][STATES];
-//  Matrix.Subtract((mtx_type*) H, (mtx_type*) Kt, STATES, STATES, (mtx_type*) I_minus_Kt);
-//  Matrix.Multiply((mtx_type*)I_minus_Kt, (mtx_type*)SIG, STATES, STATES, STATES, (mtx_type*)SIG);
-//  
-//  x = mu[0][0];
-//  x_dot = mu[1][0];
-//  y = mu[2][0];
-//  y_dot = mu[3][0];
-//  z = mu[4][0];
-//  z_dot = mu[5][0];
-//  psi = mu[6][0];
+  mtx_type state_diff[STATES][VEC] = {{x_meas-x},{y_meas-y},{z_meas-z},{x_dot_meas-x_dot},
+                                {y_dot_meas-y_dot},{z_dot_meas-z_dot},{psi_z-psi}};
+
+  mtx_type temp1[STATES][VEC];
+  Matrix.Multiply((mtx_type*)Kt, (mtx_type*)state_diff, STATES, STATES, VEC, (mtx_type*)temp1);
+  Matrix.Add((mtx_type*) temp1, (mtx_type*) mu, STATES, STATES, (mtx_type*) mu);
+
+
+  // update covariance
+  for(int i=0;i<STATES;i++) {
+    for(int j=0;j<STATES;j++) {
+      if(i==j) {
+        Kt[i][j] = 1 - Kt[i][j];
+      } 
+      else {
+        Kt[i][j] = Kt[i][j];
+      }
+    }
+  }
+  
+  Matrix.Multiply((mtx_type*)Kt, (mtx_type*)SIG, STATES, STATES, STATES, (mtx_type*)SIG);
+
+
+  // update easy to read globals
+  x = mu[0][0];
+  x_dot = mu[1][0];
+  y = mu[2][0];
+  y_dot = mu[3][0];
+  z = mu[4][0];
+  z_dot = mu[5][0];
+  psi = mu[6][0];
+}
+
+void add_SIG_and_Rt() {
+  
 }
 
 
