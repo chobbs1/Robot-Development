@@ -18,6 +18,10 @@ def poll_sensors():
     Zt = [x,y,z,x_dot,y_dot,z_dot,psi,psi_dot]
     return Zt
 
+[-s_phi*s_psi*s_theta + c_psi*c_theta, -s_psi*c_phi, s_phi*s_psi*c_theta + s_theta*c_psi],
+[s_phi*s_theta*c_psi + s_psi*c_theta, c_phi*c_psi, -s_phi*c_psi*c_theta + s_psi*s_theta],
+[-s_theta*c_phi, s_phi, c_phi*c_theta]
+
 def compute_control():
     Ut = [0,0,0,0]
     return Ut
@@ -25,6 +29,10 @@ def compute_control():
 def g(Ut,Xt0):
 
     return X1
+
+def jac(Ut,Xt0,dt):
+
+    return At
 
 def predict_state(Xt0,Pt,Ut,dt):
     Xt1 = g(Ut,Xt0)
