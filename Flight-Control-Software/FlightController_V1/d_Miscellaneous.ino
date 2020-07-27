@@ -24,12 +24,24 @@ void print_state() {
 }
 
 
-
+void log_state_simulation() {
+  Serial.print(x);
+  Serial.print(",");
+  Serial.print(y);
+  Serial.print(",");
+  Serial.print(z);
+  Serial.print(",");
+  Serial.print(phi,6);
+  Serial.print(" ,");
+  Serial.print(theta,6);
+  Serial.print(",");
+  Serial.println(psi,6);
+}
 
 void log_state() {
   Serial.print(loop_start);
   Serial.print(",");
-  Serial.print(180/PIE*phi,6);
+  Serial.print(phi,6);
   Serial.print(" ,");
   Serial.print(180/PIE*theta,6);
   Serial.print(",");

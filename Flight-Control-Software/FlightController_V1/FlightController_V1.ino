@@ -74,8 +74,7 @@ void setup() {
  Serial.begin(115200);
  initialise_sensors();
  calibrate_sensors();
- setup_motors();
-// Serial.println("Main Loop Start");
+ setup_motors(); 
  setup_time= millis();
 }
 
@@ -84,18 +83,19 @@ void loop() {
   loop_start = millis() - setup_time;
 //  print_state();
 //  log_state();
+  log_state_simulation();
 
   read_sensors(); 
   attitude_estimator();
   position_estimator();
 
 
-  if(millis()<20000) {
-    test_motors();
-  } else {
-    update_rotation_mat();
-    compute_control();
-  }
+//  if(millis()<30000) {
+//    test_motors();
+//  } else {
+//    update_rotation_mat();
+//    compute_control();
+//  }
   
   
 
