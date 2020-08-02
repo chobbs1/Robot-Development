@@ -110,11 +110,10 @@ while True:
         X = string.split(",")
         Z = [float(X[0]),float(X[1]),float(X[2]),
             0,0,0,float(X[3]),float(X[4]),float(X[5]),0,0,0]
-        print(Z)
+        # print(Z)
         plot_drone(Z)
         update_plot()
     except UnicodeDecodeError:
-        print("yeet")
         pass
     except IndexError:
         pass

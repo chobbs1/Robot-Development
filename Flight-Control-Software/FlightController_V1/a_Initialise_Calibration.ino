@@ -22,7 +22,13 @@ void initialise_sensors() {
                   Adafruit_BMP280::FILTER_X16,      /* Filtering. */
                   Adafruit_BMP280::STANDBY_MS_500);
                   
-  gpsSerial.begin(GPSBaud);
+//  gpsSerial.begin(GPSBaud);
+
+
+  radio.begin();
+  radio.openWritingPipe(address);
+  radio.setPALevel(RF24_PA_MIN);
+  radio.stopListening();
 }
 
 

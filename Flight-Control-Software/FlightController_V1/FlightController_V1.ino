@@ -5,6 +5,9 @@
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 #include <Servo.h>
+#include <SPI.h>
+#include <nRF24L01.h>
+#include <RF24.h>
 
 #define GPS_FLAG 0
 #define MAG_CAL_FLAG 0
@@ -42,6 +45,8 @@ Servo M1,M2,M3,M4;
 Adafruit_BMP280 bmp;
 int status;
 byte AK8963_Address = 0x68;
+RF24 radio(7, 8); // CE, CSN
+const byte address[6] = "00001";
 
 // misc parameters
 long loop_start;
@@ -52,7 +57,7 @@ double Ts = 0.01;
 double L = 0.223;
 double Kf = 0.0002;
 double Km = 0.0002;
-double mass = 0.414;
+double mass = 0.35;
 
 // state estimates
 double x,y,z;
@@ -97,7 +102,7 @@ void loop() {
 //    compute_control();
 //  }
   
-  
+  TX_flight_data();
 
   while (millis() - loop_start - setup_time< 1000*Ts) {}
 }
