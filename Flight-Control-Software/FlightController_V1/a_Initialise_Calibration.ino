@@ -37,7 +37,7 @@ void calibrate_sensors() {
 //  Serial.println("Calibrating sensors...");
   
   double num_samples = 20;
-  double phi_sum=0,theta_sum=0,z_sum = 0;
+  double phi_sum=0,theta_sum=0,psi_sum=0,z_sum = 0;
   double phi_d_sum=0,theta_d_sum=0,psi_d_sum=0;
   double a0_sum=0;
   
@@ -46,6 +46,7 @@ void calibrate_sensors() {
 
     phi_sum += phi_z;
     theta_sum += theta_z;
+    psi_sum += psi_z;
     
     z_sum += z_meas;
 
@@ -57,6 +58,8 @@ void calibrate_sensors() {
 
   phi_bias = phi_sum/num_samples;
   theta_bias = theta_sum/num_samples;
+  psi_bias = psi_sum/num_samples;
+  
   z_bias = z_sum/num_samples;
 
   phi_d_bias = phi_d_sum/num_samples;

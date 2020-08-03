@@ -88,7 +88,7 @@ void loop() {
   loop_start = millis() - setup_time;
 //  print_state();
 //  log_state();
-  log_state_simulation();
+//  log_state_simulation();
 
   read_sensors(); 
   attitude_estimator();
@@ -96,7 +96,7 @@ void loop() {
 
 
 //  if(millis()<30000) {
-//    test_motors();
+  test_motors();
 //  } else {
 //    update_rotation_mat();
 //    compute_control();

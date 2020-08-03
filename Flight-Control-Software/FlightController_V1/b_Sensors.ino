@@ -20,7 +20,7 @@ void read_sensors() {
 
   phi_z -= phi_bias;
   theta_z -= theta_bias;
-
+  psi_z -= psi_bias; 
   
 
 
@@ -57,6 +57,9 @@ void attitude_estimator() {
   phi_dot = phi_dot_z;
   theta_dot = theta_dot_z;
   psi_dot = psi_dot_z;
+
+  Serial.print(psi);Serial.print(",");
+  Serial.println(phi_z);
 }
 
 

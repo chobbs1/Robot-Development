@@ -15,6 +15,8 @@ void TX_flight_data() {
   TX_packet.theta = theta;
   TX_packet.psi = psi;
   TX_packet.t = loop_start;
+
+  Serial.println(TX_packet.t);
   
   radio.write(&TX_packet, sizeof(TX_packet));
 }

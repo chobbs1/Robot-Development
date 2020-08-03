@@ -25,16 +25,12 @@ void print_state() {
 
 
 void log_state_simulation() {
-  Serial.print(x);
-  Serial.print(",");
-  Serial.print(y);
-  Serial.print(",");
-  Serial.print(z);
-  Serial.print(",");
-  Serial.print(phi,6);
-  Serial.print(" ,");
-  Serial.print(theta,6);
-  Serial.print(",");
+  Serial.print(loop_start);Serial.print(",");
+  Serial.print(x);Serial.print(",");
+  Serial.print(y);Serial.print(",");
+  Serial.print(z);Serial.print(",");
+  Serial.print(phi,6);Serial.print(" ,");
+  Serial.print(theta,6);Serial.print(",");
   Serial.println(psi,6);
 }
 
