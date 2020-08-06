@@ -12,10 +12,10 @@
 #define GPS_FLAG 0
 #define MAG_CAL_FLAG 0
 
-#define M1_PIN 6
-#define M2_PIN 9
-#define M3_PIN 11
-#define M4_PIN 5
+#define M1_PIN 5
+#define M2_PIN 6
+#define M3_PIN 3
+#define M4_PIN 9
 #define MAX_THROTTLE 2000
 #define MIN_THROTTLE 1000
 
@@ -35,7 +35,7 @@
 
 int RXPin = 2;
 int TXPin = 3;
-int potValue; 
+
 
 int GPSBaud = 9600;
 TinyGPSPlus gps;
@@ -46,7 +46,17 @@ Adafruit_BMP280 bmp;
 int status;
 byte AK8963_Address = 0x68;
 RF24 radio(7, 8); // CE, CSN
-const byte address[6] = "00001";
+const byte telemetry_pipe[6] = "00001";
+const byte command_pipe[6] = "00002"; 
+
+struct command {
+  int MANUAL_CONTROL_COMMAND;
+  int MOTOR_SPEED_COMMAND;
+  int POWER_COMMAND;
+};
+
+//struct command_t Command_RX;
+struct command Command_RX;
 
 // misc parameters
 long loop_start;
@@ -86,22 +96,24 @@ void setup() {
 
 void loop() {
   loop_start = millis() - setup_time;
-//  print_state();
-//  log_state();
-//  log_state_simulation();
+  
+  RX_commands();
 
   read_sensors(); 
   attitude_estimator();
   position_estimator();
 
+  if(Command_RX.POWER_COMMAND) {
+      if(Command_RX.MANUAL_CONTROL_COMMAND) {
+         test_motors();
+      } else {
+        update_rotation_mat();
+        compute_control();
+      }
+  } else {
+      zero_motors();
+  }
 
-//  if(millis()<30000) {
-  test_motors();
-//  } else {
-//    update_rotation_mat();
-//    compute_control();
-//  }
-  
   TX_flight_data();
 
   while (millis() - loop_start - setup_time< 1000*Ts) {}

@@ -58,8 +58,8 @@ void attitude_estimator() {
   theta_dot = theta_dot_z;
   psi_dot = psi_dot_z;
 
-  Serial.print(psi);Serial.print(",");
-  Serial.println(phi_z);
+//  Serial.print(psi);Serial.print(",");
+//  Serial.println(phi_z);
 }
 
 

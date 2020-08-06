@@ -23,14 +23,17 @@ const int SAT = 130;
 
 
 void test_motors() {
-   potValue = analogRead(A3);
-   potValue = map(potValue, 0, 1023, 0, 180);
+   M1.write(Command_RX.MOTOR_SPEED_COMMAND);
+   M2.write(Command_RX.MOTOR_SPEED_COMMAND);
+   M3.write(Command_RX.MOTOR_SPEED_COMMAND);
+   M4.write(Command_RX.MOTOR_SPEED_COMMAND);
+}
 
-   M1.write(potValue);
-   M2.write(potValue);
-   M3.write(potValue);
-   M4.write(potValue);
-//   Serial.println(potValue);
+void zero_motors() {
+   M1.write(0);
+   M2.write(0);
+   M3.write(0);
+   M4.write(0);
 }
 
 

@@ -24,11 +24,13 @@ void initialise_sensors() {
                   
 //  gpsSerial.begin(GPSBaud);
 
-
   radio.begin();
-  radio.openWritingPipe(address);
+  radio.setAutoAck(false);
+  radio.setDataRate(RF24_2MBPS);  
+  radio.openReadingPipe(1, command_pipe);
+  radio.openWritingPipe(telemetry_pipe); 
   radio.setPALevel(RF24_PA_MIN);
-  radio.stopListening();
+  
 }
 
 

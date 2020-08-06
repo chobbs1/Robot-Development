@@ -3,7 +3,8 @@
 #include <RF24.h>
 
 RF24 radio(7, 8); // CE, CSN
-const byte address[6] = "00001";
+const byte telemetry_pipe[6] = "00001";
+const byte command_pipe[6] = "00002"; 
 
 struct data {
   double x,y,z;
